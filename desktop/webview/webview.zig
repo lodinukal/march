@@ -88,6 +88,11 @@ pub const Webview = opaque {
         c.webview_set_html(w, html.ptr);
     }
 
+    /// sets the virtual hostname
+    pub fn setVirtualHostName(w: *allowzero Webview, name: []const u8, folderpath: []const u8) void {
+        c.webview_set_virtual_hostname(w, name.ptr, folderpath.ptr);
+    }
+
     /// Injects JavaScript code at the initialization of the new page. Every time
     /// the webview will open a new page - this initialization code will be
     /// executed. It is guaranteed that code is executed before window.onload.

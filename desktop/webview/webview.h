@@ -166,6 +166,9 @@ extern "C"
     // Example: webview_set_html(w, "<h1>Hello</h1>");
     WEBVIEW_API void webview_set_html(webview_t w, const char *html);
 
+    // Sets virtual host name
+    WEBVIEW_API void webview_set_virtual_hostname(webview_t w, const char *vh);
+
     // Injects JavaScript code at the initialization of the new page. Every time
     // the webview will open a new page - this initialization code will be
     // executed. It is guaranteed that code is executed before window.onload.
@@ -1129,6 +1132,15 @@ namespace webview
                                           nullptr);
             }
 
+            // TODO: implement this
+            void set_virtual_hostname(const std::string &vh)
+            {
+                WebKitWebsiteDataManager *manager =
+                    webkit_web_context_get_website_data_manager(
+                        webkit_web_view_get_context(WEBKIT_WEB_VIEW(m_webview)));
+                webkit_website_data_manager_register_scheme_as_local(manager, vh.c_str());
+            }
+
             void init(const std::string &js)
             {
                 WebKitUserContentManager *manager =
@@ -1465,6 +1477,18 @@ namespace webview
                                                         "stringWithUTF8String:"_sel,
                                                         html.c_str()),
                                      nullptr);
+            }
+            // TODO: implement this
+            void set_virtual_hostname(const std::string &vh)
+            {
+                objc::autoreleasepool pool;
+                objc::msg_send<void>(m_webview, "setValue:forHTTPHeaderField:"_sel,
+                                     objc::msg_send<id>("NSString"_cls,
+                                                        "stringWithUTF8String:"_sel,
+                                                        vh.c_str()),
+                                     objc::msg_send<id>("NSString"_cls,
+                                                        "stringWithUTF8String:"_sel,
+                                                        "Host"));
             }
             void init(const std::string &js)
             {
@@ -3164,6 +3188,16 @@ namespace webview
                 m_webview->NavigateToString(widen_string(html).c_str());
             }
 
+            void set_virtual_hostname(const char *hostname, const char *folderpath)
+            {
+                std::wstring customHost(hostname, hostname + strlen(hostname));
+                std::wstring dataPath(folderpath, folderpath + strlen(folderpath));
+
+                ICoreWebView2_3* m_webview2_3;
+                m_webview->QueryInterface(IID_ICoreWebView2, (void**)&m_webview2_3);
+                m_webview2_3->SetVirtualHostNameToFolderMapping(customHost.c_str(), dataPath.c_str(), COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND_ALLOW);
+            }
+
         private:
             bool embed(HWND wnd, bool debug, msg_cb_t cb)
             {
@@ -3541,6 +3575,11 @@ WEBVIEW_API void webview_navigate(webview_t w, const char *url)
 WEBVIEW_API void webview_set_html(webview_t w, const char *html)
 {
     static_cast<webview::webview *>(w)->set_html(html);
+}
+
+WEBVIEW_API void webview_set_virtual_hostname(webview_t w, const char *hostname, const char *folderpath)
+{
+    static_cast<webview::webview *>(w)->set_virtual_hostname(hostname, folderpath);
 }
 
 WEBVIEW_API void webview_init(webview_t w, const char *js)
